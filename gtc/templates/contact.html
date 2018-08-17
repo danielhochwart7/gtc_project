@@ -1,0 +1,31 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <title>Contacts</title>
+</head>
+<body>
+    <div class="home">
+        <ul>
+            {% for contact in contacts %}
+                <li>
+                    First name: {{ contact.first_name }}<br/>
+                    Last name: {{ contact.last_name }}<br/>
+                    Email: {{ contact.email }}<br/>
+                    Headshot: <img src="{{ contact.headshot_img }}"><img/>
+                    <a href="{% url 'update' contact.id %}">Update</a><br/>
+                    <a href="{% url 'delete' contact.id %}">Delete</a>
+                </li><br/>
+            {% endfor %}
+        </ul>
+        <br/>
+        <a href="{% url 'create' %}">New contact</a>
+    </div>
+
+</body>
+</html>
