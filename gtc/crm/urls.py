@@ -1,9 +1,7 @@
 from django.urls import path
-from .views import read_all, create, update, delete
+from .views import contacts_all, contact
 
 urlpatterns = [
-    path('all/', read_all, name='read_all'),
-    path('new/', create, name='create'),
-    path('update/<int:id>', update, name='update'),
-    path('delete/<int:id>', delete, name='delete')
+    path('', contacts_all, name='contacts_all'),
+    path('<int:contact_id>', contact, name='contact'),
 ]
