@@ -8,7 +8,7 @@ import requests
 
 
 base_url = 'http://127.0.0.1:8000'
-login_url = 'http://127.0.0.1:8000/login/'
+login_url = 'http://127.0.0.1:8000/login'
 toggle_headers = {}
 
 
@@ -23,7 +23,7 @@ class Request(requests.Session):
 
         if not request.url.startswith('http'):
             request.url = base_url + request.url
-            print(request.url)
+
         return super().prepare_request(request)
 
 
@@ -38,7 +38,7 @@ class SessionManager:
             'default': {
                 'csrfmiddlewaretoken': r_token.cookies.get('csrftoken'),
                 'username': 'hochwart',
-                'password': 'hochwart',
+                'password': 'hochwartjesus',
             }
         }
         try:
@@ -49,9 +49,7 @@ class SessionManager:
             'origin': base_url,
             'referer': login_url,
         }
-
         response = r.post(login_url, data=data, headers=headers)
-
         assert response.status_code == 200
 
         return r
@@ -77,38 +75,73 @@ def admin(session_manager) -> requests.Session:
 
 class TestContacts:
 
-    def test_GET(self, admin):
-        r = admin.get('/contacts')
-        pprint(r.json())
+    @pytest.fixture(scope='function')
+    def create_contact(self, admin):
+        first_name = 'Daniel'
+        last_name = 'Abreu'
+        payload = {
+            'contacts': {
+                'first_name': first_name,
+                'last_name': last_name,
+                'email': 'alo@gmail.com'
+            }
+        }
+        r = admin.post('/api/contacts', json=payload)
+        _id = r.json()['contacts']['id']
+        yield _id
+        admin.delete('/api/contacts/{}'.format(_id))
+
+    def test_POST(self, admin):
+        first_name = 'Daniel'
+        last_name = 'Abreu'
+        payload = {
+            'contacts': {
+                'first_name': first_name,
+                'last_name': last_name,
+                'email': 'alo@gmail.com'
+            }
+        }
+        r = admin.post('/api/contacts', json=payload)
+        assert r.status_code == requests.codes.created
+
+        admin.delete('/api/contacts/{}'.format(r.json()['contacts']['id']))
+
+    def test_GET(self, admin, create_contact):
+        r = admin.get('/api/contacts')
+        assert len(r.json()['contacts']) == 1
         assert r.status_code == requests.codes.ok
 
-    def test_GET_id(self, admin):
-        r = admin.get('/contacts/10')
+    def test_GET_id(self, admin, create_contact):
+        r = admin.get('/api/contacts/{}'.format(create_contact))
         assert r.status_code == requests.codes.ok
 
-    def test_DELETE_id(self, admin):
-        r = admin.delete('/contacts/1')
+    def test_DELETE_id(self, admin, create_contact):
+        r = admin.delete('/api/contacts/{}'.format(create_contact))
         assert r.status_code == requests.codes.ok
 
     def test_POST_id(self, admin):
-        r = admin.post('/contacts/1')
+        r = admin.post('/api/contacts/1')
         assert r.status_code == requests.codes.not_allowed
 
     def test_OPTIONS_id(self, admin):
-        r = admin.options('/contacts/1')
+        r = admin.options('/api/contacts/1')
         assert r.status_code == requests.codes.not_allowed
 
-    def test_patch_id(self, admin):
+    @pytest.mark.skip()
+    def test_patch_id_invalid_field(self, admin, create_contact):
+        first_name = 'Daniel'
+        last_name = 'Abreu'
         payload = {
             'contacts': {
-                'first_name': 'Novo',
-                'last_name': 'Nome',
+                'first_name': first_name,
+                'last_name': last_name,
+                'id': 'bah'
             }
         }
-        r = admin.patch('/contacts/11', json=payload)
-        assert r.status_code == requests.codes.ok
+        r = admin.patch('/api/contacts/{}'.format(create_contact), json=payload)
+        assert r.status_code == requests.codes.bad_request
 
-        r = admin.get('/contacts/11')
+        r = admin.get('/api/contacts/{}'.format(create_contact))
         assert r.status_code == requests.codes.ok
-        assert r.json()['contacts']['first_name'] == 'Novo'
-        assert r.json()['contacts']['last_name'] == 'Nome'
+        assert r.json()['contacts']['first_name'] == first_name
+        assert r.json()['contacts']['last_name'] == 'Hochwart'

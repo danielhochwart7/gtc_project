@@ -21,8 +21,8 @@ from django.conf.urls.static import static
 from crm import urls as contacts
 
 urlpatterns = [
-    path('contacts/', include(contacts)),
-    path('login/', auth_views.LoginView.as_view(), name='login'),
+    path('login', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('api/contacts', include(contacts)),
     path('admin/', admin.site.urls),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
